@@ -54,3 +54,4 @@ async def test_project(dut):
         await RisingEdge(dut.clk)
 
     dut._log.info("Done")
+    assert dut.uo_out.value is not None

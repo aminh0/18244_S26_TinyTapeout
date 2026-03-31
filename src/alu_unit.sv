@@ -16,7 +16,7 @@ module alu_unit (
 
   typedef enum logic [1:0] {
     IDLE  = 2'd0,
-    EX1   = 2'd1,
+    EX1   = 2'd1
   } state_t;
 
   state_t state;
