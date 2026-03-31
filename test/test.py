@@ -49,7 +49,7 @@ async def test_project(dut):
 
     # Check outputs (uo[7:0] and uio[7:4])
     for _ in range(8):
-        out = (dut.uio_out.value & 0xF0) << 4 | dut.uo_out.value
+        out = (dut.uio_out.value.integer & 0xF0) << 4 | dut.uo_out.value.integer
         dut._log.info(f"out = {out:#014b} | uo={dut.uo_out.value:#010b} uio={dut.uio_out.value:#010b}")
         await RisingEdge(dut.clk)
 
