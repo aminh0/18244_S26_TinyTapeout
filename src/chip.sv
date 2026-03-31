@@ -1,6 +1,6 @@
 
 
-`timescale 10ns / 10ps
+// `timescale 10ns / 10ps
 
 // `include "instruction_queue.sv"
 // `include "register_file.sv"
@@ -56,6 +56,8 @@ module my_chip (
     wire [2:0]  mem_opcode;     
     wire [2:0]  mem_addr;       
     wire [1:0]  mem_rob_idx_in;
+    wire [1:0]  mem_rob_idx;
+    wire [2:0]  mem_data;
 
     //RF
     wire [2:0]  rf_value;
