@@ -6,7 +6,16 @@ SIM ?= icarus
 FST ?= -fst # Use more efficient FST format
 TOPLEVEL_LANG ?= verilog
 SRC_DIR = $(PWD)/../src
-PROJECT_SOURCES = project.v RangeFinder.sv
+PROJECT_SOURCES = project.v \
+                  chip.sv \
+                  instruction_queue.sv \
+                  register_file.sv \
+                  register_alias_table.sv \
+                  alu_unit.sv \
+                  alu_reservation_station.sv \
+                  mem_reservation_station.sv \
+                  reorder_buffer.sv \
+                  memory_unit.sv
 
 ifneq ($(GATES),yes)
 

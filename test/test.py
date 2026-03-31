@@ -3,51 +3,54 @@
 
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import ClockCycles
+from cocotb.triggers import ClockCycles, RisingEdge
 
 @cocotb.test()
 async def test_project(dut):
     dut._log.info("Start")
 
-    clock = Clock(dut.clk, 10, unit="us")
+    # 30MHz clock → period ≈ 33ns
+    clock = Clock(dut.clk, 33, unit="ns")
     cocotb.start_soon(clock.start())
 
+    # Helper function to set instruction inputs
+    def set_instr(instr):
+        dut.ui_in.value  = instr & 0xFF          # [7:0]
+        dut.uio_in.value = (instr >> 8) & 0xF    # [11:8]
+
     # Reset
-    dut._log.info("Reset")
-    dut.ena.value = 1
-    dut.ui_in.value = 0
-    dut.uio_in.value = 0  # go=bit0, finish=bit1
     dut.rst_n.value = 0
-    await ClockCycles(dut.clk, 10)
+    dut.ena.value   = 1
+    set_instr(0)
+    await ClockCycles(dut.clk, 3)
     dut.rst_n.value = 1
-    await ClockCycles(dut.clk, 2)
 
-    dut._log.info("Test RangeFinder: input 10, 50, 30 -> range should be 40")
+    # Instructions
+    instr_mem = [
+        (0b101 << 9) | (0 << 6) | (0 << 3) | 0,  # LD  R0, MEM[0]
+        (0b000 << 9) | (1 << 6) | (0 << 3) | 2,  # ADD R1, R0, R2
+        (0b001 << 9) | (4 << 6) | (5 << 3) | 3,  # SUB R4, R5, R3
+        (0b011 << 9) | (4 << 6) | (6 << 3) | 7,  # OR  R4, R6, R7
+        (0b101 << 9) | (6 << 6) | (6 << 3) | 2,  # LD  R6, MEM[2]
+        (0b100 << 9) | (2 << 6) | (3 << 3) | 6,  # XOR R2, R3, R6
+        (0b010 << 9) | (3 << 6) | (7 << 3) | 6,  # AND R3, R7, R6
+        (0b111 << 9) | 0,                          # HALT
+    ]
 
-    # go=1, first data=10
-    dut.ui_in.value = 10
-    dut.uio_in.value = 0b00000001  # go=1
-    await ClockCycles(dut.clk, 1)
+    # Feed instructions
+    for instr in instr_mem:
+        set_instr(instr)
+        await RisingEdge(dut.clk)
 
-    # go=0, data=50
-    dut.ui_in.value = 50
-    dut.uio_in.value = 0b00000000
-    await ClockCycles(dut.clk, 1)
+    set_instr(0)
 
-    # go=0, data=30
-    dut.ui_in.value = 30
-    dut.uio_in.value = 0b00000000
-    await ClockCycles(dut.clk, 1)
+    # wait for some cycles to let the CPU execute instructions
+    await ClockCycles(dut.clk, 100)
 
-    # finish=1
-    dut.ui_in.value = 0
-    dut.uio_in.value = 0b00000010  # finish=1
-    await ClockCycles(dut.clk, 1)
+    # Check outputs (uo[7:0] and uio[7:4])
+    for _ in range(8):
+        out = (dut.uio_out.value & 0xF0) << 4 | dut.uo_out.value
+        dut._log.info(f"out = {out:#014b} | uo={dut.uo_out.value:#010b} uio={dut.uio_out.value:#010b}")
+        await RisingEdge(dut.clk)
 
-    # finish=0, check output
-    dut.uio_in.value = 0b00000000
-    await ClockCycles(dut.clk, 1)
-
-    # range = max - min = 50 - 10 = 40
-    assert dut.uo_out.value == 40, f"Expected 40, got {dut.uo_out.value}"
-    dut._log.info("Test passed!")
+    dut._log.info("Done")
