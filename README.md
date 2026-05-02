@@ -1,42 +1,56 @@
-![](../../workflows/gds/badge.svg) ![](../../workflows/docs/badge.svg) ![](../../workflows/test/badge.svg) ![](../../workflows/fpga/badge.svg)
+# Tiny Out-of-Order CPU
 
-# Tiny Tapeout Verilog Project Template
+This project implements a **minimal Out-of-Order (OoO) CPU** designed under the strict area constraints of TinyTapeout (~2000 cells). The goal is to demonstrate key microarchitectural concepts such as instruction scheduling, register renaming, and out-of-order execution in a compact design.
 
-- [Read the documentation for project](docs/info.md)
+## Overview
 
-## What is Tiny Tapeout?
+The CPU supports a simple instruction set including:
+- ADD, SUB, AND, OR, XOR (ALU operations)
+- LD (memory operation)
 
-Tiny Tapeout is an educational project that aims to make it easier and cheaper than ever to get your digital and analog designs manufactured on a real chip.
+Despite its small size, the processor includes essential OoO components:
+- Instruction Queue (IQ)
+- Register Alias Table (RAT)
+- Reservation Stations (ALU + Memory)
+- Reorder Buffer (ROB)
+- Register File (RF)
 
-To learn more and get started, visit https://tinytapeout.com.
+## Key Features
 
-## Set up your Verilog project
+- **Out-of-Order Execution**
+  - Instructions execute as soon as operands are ready
+- **In-order Commit**
+  - Ensures correct program semantics using ROB
+- **Register Renaming**
+  - Eliminates WAR and WAW hazards using ROB index
+- **Data Dependency Handling**
+  - Supports RAW, WAR, and WAW scenarios
 
-1. Add your Verilog files to the `src` folder.
-2. Edit the [info.yaml](info.yaml) and update information about your project, paying special attention to the `source_files` and `top_module` properties. If you are upgrading an existing Tiny Tapeout project, check out our [online info.yaml migration tool](https://tinytapeout.github.io/tt-yaml-upgrade-tool/).
-3. Edit [docs/info.md](docs/info.md) and add a description of your project.
-4. Adapt the testbench to your design. See [test/README.md](test/README.md) for more information.
+## Execution Flow
 
-The GitHub action will automatically build the ASIC files using [LibreLane](https://www.zerotoasiccourse.com/terminology/librelane/).
+1. Instructions are fetched into the Instruction Queue
+2. Instructions are decoded and issued if ROB and RS have space
+3. Operands are checked:
+   - Ready → execute immediately
+   - Not ready → wait in RS
+4. Execution:
+   - ALU: 2 cycles
+   - Memory: 4–5 cycles
+5. Results written to ROB
+6. Commit in program order → update register file
 
-## Enable GitHub actions to build the results page
+## Example Result
 
-- [Enabling GitHub Pages](https://tinytapeout.com/faq/#my-github-action-is-failing-on-the-pages-part)
+For a test program of 7 instructions:
+- Total execution time: **28 cycles**
+- Demonstrates true OoO execution due to different latencies
 
-## Resources
+## Why this project?
 
-- [FAQ](https://tinytapeout.com/faq/)
-- [Digital design lessons](https://tinytapeout.com/digital_design/)
-- [Learn how semiconductors work](https://tinytapeout.com/siliwiz/)
-- [Join the community](https://tinytapeout.com/discord)
-- [Build your design locally](https://www.tinytapeout.com/guides/local-hardening/)
+This design shows how core CPU architecture concepts can be implemented even under extreme hardware constraints. It is intended as an educational demonstration of OoO execution mechanisms.
 
-## What next?
+## Repository Structure
 
-- [Submit your design to the next shuttle](https://app.tinytapeout.com/).
-- Edit [this README](README.md) and explain your design, how it works, and how to test it.
-- Share your project on your social network of choice:
-  - LinkedIn [#tinytapeout](https://www.linkedin.com/search/results/content/?keywords=%23tinytapeout) [@TinyTapeout](https://www.linkedin.com/company/100708654/)
-  - Mastodon [#tinytapeout](https://chaos.social/tags/tinytapeout) [@matthewvenn](https://chaos.social/@matthewvenn)
-  - X (formerly Twitter) [#tinytapeout](https://twitter.com/hashtag/tinytapeout) [@tinytapeout](https://twitter.com/tinytapeout)
-  - Bluesky [@tinytapeout.com](https://bsky.app/profile/tinytapeout.com)
+- `src/` → Verilog implementation
+- `docs/info.md` → Detailed project description
+- `test/` → Testbench and validation
